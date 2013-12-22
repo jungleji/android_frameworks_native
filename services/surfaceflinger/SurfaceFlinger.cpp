@@ -241,6 +241,28 @@ void SurfaceFlinger::bootFinished()
     // formerly we would just kill the process, but we now ask it to exit so it
     // can choose where to stop the animation.
     property_set("service.bootanim.exit", "1");
+
+    char srcPath[30]="/data/displaysetmode";
+    FILE *srcFp;
+    char value[PROPERTY_VALUE_MAX];
+    if ((srcFp = fopen(srcPath, "r")) == NULL) {
+        ALOGE("#####cannot open file %s to read#####",srcPath);
+    } else {
+        char type[4] = "";
+        char format[4] = "";
+        int len1 = 4;
+        int len2 = 4;
+        fgets(type,len1,srcFp);
+        fgets(format,len2,srcFp);
+        int outtype = atoi(type);
+        int outformat = atoi(format);
+        ALOGD("####read file %s, outtype is %d, outformat is %d",srcPath,outtype,outformat);
+        if (outtype >= 0 && outformat >= 0) {
+            setDisplayProp(DISPLAY_CMD_SETDISPPARA,0,outtype,outformat);
+            setDisplayProp(DISPLAY_CMD_SETDISPMODE,DISPLAY_MODE_SINGLE_VAR_GPU,0,0);
+        }
+        fclose(srcFp);
+    }
 }
 
 void SurfaceFlinger::deleteTextureAsync(GLuint texture) {
@@ -549,7 +571,6 @@ status_t SurfaceFlinger::readyToRun()
     // initialize our drawing state
     mDrawingState = mCurrentState;
 
-
     // We're now ready to accept clients...
     mReadyToRunBarrier.open();
 
@@ -706,6 +727,30 @@ status_t SurfaceFlinger::getDisplayInfo(const sp<IBinder>& display, DisplayInfo*
     else {
         info->w = hwc.getWidth(type);
         info->h = hwc.getHeight(type);
+
+        const sp<const DisplayDevice> hw(getDefaultDisplayDevice());
+        ALOGD("Call setDispProp(DISPLAY_CMD_GETDISPLAYMODE,0,0,0)");
+        if(hw->setDispProp(DISPLAY_CMD_GETDISPLAYMODE,0,0,0) == DISPLAY_MODE_SINGLE_VAR_GPU)
+            {
+                info->w = hw->setDispProp(DISPLAY_CMD_GETDISPPARA,0,DISPLAY_APP_WIDTH,0);
+                info->h = hw->setDispProp(DISPLAY_CMD_GETDISPPARA,0,DISPLAY_APP_HEIGHT,0);
+            }
+
+	char property[PROPERTY_VALUE_MAX];
+        if (property_get("ro.sf.hwrotation", property, NULL) > 0)
+	    {
+	        switch (atoi(property))
+                    {
+	            case 90:
+	            case 270:
+                        info->w = hwc.getHeight(type);
+                        info->h = hwc.getWidth(type);
+	                break;
+	            default:
+	                break;
+                    }
+            }
+
         info->xdpi = xdpi;
         info->ydpi = ydpi;
     }
@@ -2123,6 +2168,7 @@ void SurfaceFlinger::onScreenAcquired(const sp<const DisplayDevice>& hw) {
 
     hw->acquireScreen();
     int32_t type = hw->getDisplayType();
+    ALOGD("onScreenAcquired hw->getDisplayType = %d", type);
     if (type < DisplayDevice::NUM_DISPLAY_TYPES) {
         // built-in display, tell the HWC
         getHwComposer().acquire(type);
@@ -2869,6 +2915,247 @@ status_t SurfaceFlinger::captureScreen(const sp<IBinder>& display,
         res = static_cast<MessageCaptureScreen*>( msg.get() )->getResult();
     }
     return res;
+}
+
+int SurfaceFlinger::setDisplayParameter(uint32_t cmd,uint32_t  value)
+{
+    int ret = NO_ERROR;
+    HWComposer& hwc(getHwComposer());
+    if (hwc.initCheck() == NO_ERROR)
+    {
+        if(cmd == HWC_LAYER_SETINITPARA)
+        {
+            //const DisplayHardware& hw(graphicPlane(0).displayHardware());
+			const sp<DisplayDevice>& hw(mDisplays[0]);
+            screen_para_t screen_para;
+
+            screen_para.app_width[0] = hw->setDispProp(DISPLAY_CMD_GETDISPPARA,0,DISPLAY_APP_WIDTH,0);
+            screen_para.app_height[0] = hw->setDispProp(DISPLAY_CMD_GETDISPPARA,0,DISPLAY_APP_HEIGHT,0);
+            screen_para.width[0] = hw->setDispProp(DISPLAY_CMD_GETDISPPARA,0,DISPLAY_OUTPUT_WIDTH,0);
+            screen_para.height[0] = hw->setDispProp(DISPLAY_CMD_GETDISPPARA,0,DISPLAY_OUTPUT_HEIGHT,0);
+            screen_para.valid_width[0] = hw->setDispProp(DISPLAY_CMD_GETDISPPARA,0,DISPLAY_VALID_WIDTH,0);
+            screen_para.valid_height[0] = hw->setDispProp(DISPLAY_CMD_GETDISPPARA,0,DISPLAY_VALID_HEIGHT,0);
+            screen_para.app_width[1] = hw->setDispProp(DISPLAY_CMD_GETDISPPARA,1,DISPLAY_APP_WIDTH,0);
+            screen_para.app_height[1] = hw->setDispProp(DISPLAY_CMD_GETDISPPARA,1,DISPLAY_APP_HEIGHT,0);
+            screen_para.width[1] = hw->setDispProp(DISPLAY_CMD_GETDISPPARA,1,DISPLAY_OUTPUT_WIDTH,0);
+            screen_para.height[1] = hw->setDispProp(DISPLAY_CMD_GETDISPPARA,1,DISPLAY_OUTPUT_HEIGHT,0);
+            screen_para.valid_width[1] = hw->setDispProp(DISPLAY_CMD_GETDISPPARA,1,DISPLAY_VALID_WIDTH,0);
+            screen_para.valid_height[1] = hw->setDispProp(DISPLAY_CMD_GETDISPPARA,1,DISPLAY_VALID_HEIGHT,0);
+            hwc.setParameter(HWC_LAYER_SET_SCREEN_PARA,(unsigned int)&screen_para);
+            repaintEverything();
+        }
+        else if(cmd == HWC_LAYER_SETFRAMEPARA)
+        {
+			for (size_t dpy = 0; dpy < mDisplays.size(); dpy++) {
+				sp<const DisplayDevice> hw(mDisplays[dpy]);
+				const int32_t id = hw->getHwcDisplayId();
+				if (id >= 0) {
+					sp<const DisplayDevice> hw(mDisplays[dpy]);
+					const Vector<sp<LayerBase> >& layers(
+							hw->getVisibleLayersSortedByZ());
+					const size_t count = layers.size();
+					hwc.createWorkList(id, count);
+					hwc.prepare();
+				}
+			}
+        }
+
+        ret = hwc.setParameter(cmd,value);
+        if(cmd == HWC_LAYER_SET3DMODE || (cmd == HWC_LAYER_SHOW && value == 0))
+        {
+            const sp<DisplayDevice>& hw(mDisplays[0]);
+            screen_para_t screen_para;
+
+            int cur_3denable = hwc.getParameter(HWC_LAYER_GET3DENABLE);
+            hw->setDispProp(DISPLAY_CMD_SET3DMODE,0,cur_3denable,0);
+
+            screen_para.app_width[0] = hw->setDispProp(DISPLAY_CMD_GETDISPPARA,0,DISPLAY_APP_WIDTH,0);
+            screen_para.app_height[0] = hw->setDispProp(DISPLAY_CMD_GETDISPPARA,0,DISPLAY_APP_HEIGHT,0);
+            screen_para.width[0] = hw->setDispProp(DISPLAY_CMD_GETDISPPARA,0,DISPLAY_OUTPUT_WIDTH,0);
+            screen_para.height[0] = hw->setDispProp(DISPLAY_CMD_GETDISPPARA,0,DISPLAY_OUTPUT_HEIGHT,0);
+            screen_para.valid_width[0] = hw->setDispProp(DISPLAY_CMD_GETDISPPARA,0,DISPLAY_VALID_WIDTH,0);
+            screen_para.valid_height[0] = hw->setDispProp(DISPLAY_CMD_GETDISPPARA,0,DISPLAY_VALID_HEIGHT,0);
+            screen_para.app_width[1] = hw->setDispProp(DISPLAY_CMD_GETDISPPARA,1,DISPLAY_APP_WIDTH,0);
+            screen_para.app_height[1] = hw->setDispProp(DISPLAY_CMD_GETDISPPARA,1,DISPLAY_APP_HEIGHT,0);
+            screen_para.width[1] = hw->setDispProp(DISPLAY_CMD_GETDISPPARA,1,DISPLAY_OUTPUT_WIDTH,0);
+            screen_para.height[1] = hw->setDispProp(DISPLAY_CMD_GETDISPPARA,1,DISPLAY_OUTPUT_HEIGHT,0);
+            screen_para.valid_width[1] = hw->setDispProp(DISPLAY_CMD_GETDISPPARA,1,DISPLAY_VALID_WIDTH,0);
+            screen_para.valid_height[1] = hw->setDispProp(DISPLAY_CMD_GETDISPPARA,1,DISPLAY_VALID_HEIGHT,0);
+            hwc.setParameter(HWC_LAYER_SET_SCREEN_PARA,(unsigned int)&screen_para);
+            repaintEverything();
+        }
+    }
+
+    return ret;
+}
+
+uint32_t SurfaceFlinger::getDisplayParameter(uint32_t cmd)
+{
+    HWComposer& hwc(getHwComposer());
+    if (hwc.initCheck() == NO_ERROR)
+    {
+        return hwc.getParameter(cmd);
+    }
+
+    return NO_ERROR;
+}
+
+int SurfaceFlinger::setDisplayProp(int cmd,int param0,int param1,int param2)
+{
+    int ret = 0;
+    const sp<DisplayDevice>& hw(mDisplays[0]);
+    ALOGD("Called in setDispProp(%d, %d, %d, %d)", cmd, param0, param1, param2);
+    ret = hw->setDispProp(cmd,param0,param1,param2);
+
+    if(cmd == DISPLAY_CMD_SETDISPMODE)
+    {
+        if(ret >= 0)
+        {
+             HWComposer& hwc(getHwComposer());
+             int hwc_mode = 0;
+
+			 screen_para_t screen_para;
+
+             screen_para.app_width[0] = hw->setDispProp(DISPLAY_CMD_GETDISPPARA,0,DISPLAY_APP_WIDTH,0);
+             screen_para.app_height[0] = hw->setDispProp(DISPLAY_CMD_GETDISPPARA,0,DISPLAY_APP_HEIGHT,0);
+             screen_para.width[0] = hw->setDispProp(DISPLAY_CMD_GETDISPPARA,0,DISPLAY_OUTPUT_WIDTH,0);
+             screen_para.height[0] = hw->setDispProp(DISPLAY_CMD_GETDISPPARA,0,DISPLAY_OUTPUT_HEIGHT,0);
+             screen_para.valid_width[0] = hw->setDispProp(DISPLAY_CMD_GETDISPPARA,0,DISPLAY_VALID_WIDTH,0);
+             screen_para.valid_height[0] = hw->setDispProp(DISPLAY_CMD_GETDISPPARA,0,DISPLAY_VALID_HEIGHT,0);
+             screen_para.app_width[1] = hw->setDispProp(DISPLAY_CMD_GETDISPPARA,1,DISPLAY_APP_WIDTH,0);
+             screen_para.app_height[1] = hw->setDispProp(DISPLAY_CMD_GETDISPPARA,1,DISPLAY_APP_HEIGHT,0);
+             screen_para.width[1] = hw->setDispProp(DISPLAY_CMD_GETDISPPARA,1,DISPLAY_OUTPUT_WIDTH,0);
+             screen_para.height[1] = hw->setDispProp(DISPLAY_CMD_GETDISPPARA,1,DISPLAY_OUTPUT_HEIGHT,0);
+             screen_para.valid_width[1] = hw->setDispProp(DISPLAY_CMD_GETDISPPARA,1,DISPLAY_VALID_WIDTH,0);
+             screen_para.valid_height[1] = hw->setDispProp(DISPLAY_CMD_GETDISPPARA,1,DISPLAY_VALID_HEIGHT,0);
+             hwc.setParameter(HWC_LAYER_SET_SCREEN_PARA,(unsigned int)&screen_para);
+
+             if((param0 == DISPLAY_MODE_SINGLE) || (param0 == DISPLAY_MODE_SINGLE_VAR_FE) || (param0 == DISPLAY_MODE_SINGLE_FB_VAR))
+             {
+                 hwc_mode = HWC_MODE_SCREEN0;
+             }
+             else if(param0 == DISPLAY_MODE_DUALSAME)
+             {
+                 hwc_mode = HWC_MODE_SCREEN0_TO_SCREEN1;
+             }
+             else if(param0 == DISPLAY_MODE_DUALSAME_TWO_VIDEO)
+             {
+                 hwc_mode = HWC_MODE_SCREEN0_AND_SCREEN1;
+             }
+             else if(param0 == DISPLAY_MODE_SINGLE_VAR_GPU)
+             {
+                hwc_mode = HWC_MODE_SCREEN0_GPU;
+             }
+             else
+             {
+                ALOGW("not supported display mode: %d in setDisplayProp", param0);
+                return -1;
+             }
+             hwc.setParameter(HWC_LAYER_SETMODE,hwc_mode);
+             repaintEverything();
+         }
+         else
+         {
+            return 0;
+         }
+    }
+    return ret;
+}
+
+int SurfaceFlinger::getDisplayProp(int cmd,int param0,int param1)
+{
+    const sp<DisplayDevice>& hw(mDisplays[0]);
+
+    return hw->getDispProp(cmd,param0,param1);
+}
+
+void SurfaceFlinger::registerClient(const sp<ISurfaceClient>& client)
+{
+    Mutex::Autolock _l(mClientLock);
+
+    int pid = IPCThreadState::self()->getCallingPid();
+    if (mNotificationClients.indexOfKey(pid) < 0) {
+        sp<NotificationClient> notificationClient = new NotificationClient(this,
+                                                                            client,
+                                                                            pid);
+        ALOGV("registerClient() client %p, pid %d", notificationClient.get(), pid);
+
+        mNotificationClients.add(pid, notificationClient);
+
+        sp<IBinder> binder = client->asBinder();
+        binder->linkToDeath(notificationClient);
+    }
+}
+
+void SurfaceFlinger::unregisterClient()
+{
+	Mutex::Autolock _l(mClientLock);
+
+	int pid = IPCThreadState::self()->getCallingPid();
+	int index = mNotificationClients.indexOfKey(pid);
+    if (index >= 0)
+    {
+        sp <NotificationClient> client = mNotificationClients.valueFor(pid);
+        ALOGV("removeNotificationClient() %p, pid %d", client.get(), pid);
+        mNotificationClients.removeItem(pid);
+    }
+}
+
+
+void SurfaceFlinger::removeNotificationClient(pid_t pid)
+{
+    Mutex::Autolock _l(mClientLock);
+
+    int index = mNotificationClients.indexOfKey(pid);
+    if (index >= 0)
+    {
+        sp <NotificationClient> client = mNotificationClients.valueFor(pid);
+        ALOGV("removeNotificationClient() %p, pid %d", client.get(), pid);
+        mNotificationClients.removeItem(pid);
+    }
+}
+
+// audioConfigChanged_l() must be called with AudioFlinger::mLock held
+void SurfaceFlinger::NotifyFramebufferChanged_l(int event, int displayno)
+{
+    size_t size = mNotificationClients.size();
+    for (size_t i = 0; i < size; i++)
+    {
+        mNotificationClients.valueAt(i)->client()->notifyCallback(event, displayno, 0,0,0);
+    }
+}
+
+int  SurfaceFlinger::NotifyFBConverted_l(unsigned int addr1,unsigned int addr2,int bufid,int64_t proctime)
+{
+	size_t size = mNotificationClients.size();
+	ALOGV("mNotificationClients.size() is %d \n", size);
+    for (size_t i = 0; i < size; i++)
+    {
+        mNotificationClients.valueAt(i)->client()->notifyCallback(SURFACECLIENT_MSG_CONVERTFB, addr1, addr2,bufid,proctime);
+    }
+
+    return size;
+}
+
+SurfaceFlinger::NotificationClient::NotificationClient(const sp<SurfaceFlinger>& surfaceflinger,
+                                                     const sp<ISurfaceClient>& client,
+                                                     pid_t pid)
+    : mSurfaceFlinger(surfaceflinger), mPid(pid), mClient(client)
+{
+}
+
+SurfaceFlinger::NotificationClient::~NotificationClient()
+{
+    mClient.clear();
+}
+
+void SurfaceFlinger::NotificationClient::binderDied(const wp<IBinder>& who)
+{
+    ALOGD("SurfaceFlinger::NotificationClient::binderDied, pid %d", mPid);
+    sp<NotificationClient> keep(this);
+    {
+        mSurfaceFlinger->removeNotificationClient(mPid);
+    }
 }
 
 // ---------------------------------------------------------------------------

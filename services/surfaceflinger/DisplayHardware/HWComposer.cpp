@@ -298,6 +298,7 @@ HWComposer::HWComposer(
                 mNumDisplays = 1;
             }
         } else {
+            ALOGI("needVSyncThread = true");
             needVSyncThread = true;
             mNumDisplays = 1;
         }
@@ -357,6 +358,7 @@ void HWComposer::loadHwcModule()
 {
     hw_module_t const* module;
 
+    ALOGI("Load hwcomposer module");
     if (hw_get_module(HWC_HARDWARE_MODULE_ID, &module) != 0) {
         ALOGE("%s module not found", HWC_HARDWARE_MODULE_ID);
         return;
@@ -386,6 +388,7 @@ void HWComposer::loadFbHalModule()
 {
     hw_module_t const* module;
 
+    ALOGI("Load framebuffer hal module");
     if (hw_get_module(GRALLOC_HARDWARE_MODULE_ID, &module) != 0) {
         ALOGE("%s module not found", GRALLOC_HARDWARE_MODULE_ID);
         return;
@@ -746,9 +749,9 @@ status_t HWComposer::prepare() {
                         //ALOGD("prepare: %d, type=%d, handle=%p",
                         //        i, l.compositionType, l.handle);
 
-                        if (l.flags & HWC_SKIP_LAYER) {
-                            l.compositionType = HWC_FRAMEBUFFER;
-                        }
+                        // if (l.flags & HWC_SKIP_LAYER) {
+                        //     l.compositionType = HWC_FRAMEBUFFER;
+                        // }
                         if (l.compositionType == HWC_FRAMEBUFFER) {
                             disp.hasFbComp = true;
                         }
@@ -933,6 +936,31 @@ void HWComposer::fbDump(String8& result) {
     }
 }
 
+int HWComposer::setParameter(uint32_t cmd,uint32_t value)
+{
+    if (mHwc) {
+        int err;
+        if ( (cmd == HWC_LAYER_SETTOP) || (cmd == HWC_LAYER_SETBOTTOM) ) {
+            err = mHwc->setlayerorder(mHwc, mNumDisplays, mLists, cmd);
+        } else {
+            err = mHwc->setparameter(mHwc, cmd,value);
+        }
+        //int err = mHwc->setparameter(mHwc, cmd,value);
+
+        return (status_t)err;
+    }
+    return NO_ERROR;
+}
+
+uint32_t HWComposer::getParameter(uint32_t cmd)
+{
+    if (mHwc) {
+        return mHwc->getparameter(mHwc, cmd);
+    }
+
+    return NO_ERROR;
+}
+
 /*
  * Helper template to implement a concrete HWCLayer
  * This holds the pointer to the concrete hwc layer type
@@ -1043,8 +1071,10 @@ public:
             visibleRegion.numRects = 0;
             visibleRegion.rects = NULL;
         }
-
     }
+    virtual void setFormat(uint32_t format) {
+    }
+
 };
 // #endif // !HWC_REMOVE_DEPRECATED_VERSIONS
 
@@ -1133,6 +1163,10 @@ public:
         }
 
         getLayer()->acquireFenceFd = -1;
+    }
+
+    virtual void setFormat(uint32_t format) {
+        getLayer()->format = format;
     }
 };
 

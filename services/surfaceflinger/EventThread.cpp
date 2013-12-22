@@ -15,6 +15,7 @@
  */
 
 #define ATRACE_TAG ATRACE_TAG_GRAPHICS
+#define LOG_TAG "EventThread"
 
 #include <stdint.h>
 #include <sys/types.h>

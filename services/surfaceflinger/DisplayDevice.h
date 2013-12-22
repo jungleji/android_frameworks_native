@@ -21,6 +21,7 @@
 
 #include <ui/PixelFormat.h>
 #include <ui/Region.h>
+#include <ui/DisplayCommand.h>
 
 #include <EGL/egl.h>
 #include <EGL/eglext.h>
@@ -31,6 +32,7 @@
 #include <hardware/hwcomposer_defs.h>
 
 #include "Transform.h"
+#include "DisplayDispatcher.h"
 
 struct ANativeWindow;
 
@@ -146,6 +148,10 @@ public:
      */
     uint32_t getPageFlipCount() const;
     void dump(String8& result, char* buffer, size_t SIZE) const;
+
+    sp<DisplayDispatcher>  mDisplayDispatcher;
+    int setDispProp(int cmd,int param0,int param1,int param2) const;
+    int getDispProp(int cmd,int param0,int param1) const;
 
 private:
     void init(EGLConfig config);

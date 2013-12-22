@@ -35,6 +35,7 @@
 #include <gui/ISurfaceComposer.h>
 #include <gui/ISurfaceComposerClient.h>
 #include <gui/SurfaceComposerClient.h>
+#include <gui/ISurfaceClient.h>
 
 #include <private/gui/ComposerService.h>
 #include <private/gui/LayerState.h>
@@ -619,6 +620,45 @@ void SurfaceComposerClient::blankDisplay(const sp<IBinder>& token) {
 
 void SurfaceComposerClient::unblankDisplay(const sp<IBinder>& token) {
     ComposerService::getComposerService()->unblank(token);
+}
+
+int  SurfaceComposerClient::setDisplayProp(int cmd,int param0,int param1,int param2)
+{
+    sp<ISurfaceComposer> s(ComposerService::getComposerService());
+    if (s == NULL) return NO_INIT;
+    return s->setDisplayProp(cmd,param0,param1,param2);
+}
+
+int  SurfaceComposerClient::getDisplayProp(int cmd,int param0,int param1)
+{
+    sp<ISurfaceComposer> s(ComposerService::getComposerService());
+    if (s == NULL) return NO_INIT;
+
+    return s->getDisplayProp(cmd,param0,param1);
+}
+
+void  SurfaceComposerClient::registerSurfaceClient(const sp<ISurfaceClient>& client)
+{
+    sp<ISurfaceComposer> s(ComposerService::getComposerService());
+    if (s == NULL)
+    {
+        ALOGD("get ISurfaceComposer failed!\n");
+        return ;
+    }
+
+    return s->registerClient(client);
+}
+
+void  SurfaceComposerClient::unregisterSurfaceClient()
+{
+    sp<ISurfaceComposer> s(ComposerService::getComposerService());
+    if (s == NULL)
+    {
+        ALOGD("get ISurfaceComposer failed!\n");
+        return ;
+    }
+
+    return s->unregisterClient();
 }
 
 // TODO: Remove me.  Do not use.
