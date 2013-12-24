@@ -455,8 +455,6 @@ void LayerBase::drawWithOpenGL(const sp<const DisplayDevice>& hw, const Region& 
     glTexCoordPointer(2, GL_FLOAT, 0, texCoords);
     glVertexPointer(2, GL_FLOAT, 0, mesh.getVertices());
 
-    ALOGD("Called in drawWithOpenGL");
-
     if(hw->setDispProp(DISPLAY_CMD_GETDISPLAYMODE,0,0,0) == DISPLAY_MODE_SINGLE_VAR_GPU)
     {
         int app_width = hw->setDispProp(DISPLAY_CMD_GETDISPPARA,0,DISPLAY_APP_WIDTH,0);

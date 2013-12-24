@@ -30,6 +30,7 @@ LOCAL_SHARED_LIBRARIES := \
 	libcutils \
 	libhardware \
 	libsync \
+	libhardware_legacy \
 	libutils
 
 ifneq ($(BOARD_FRAMEBUFFER_FORCE_FORMAT),)

@@ -394,7 +394,7 @@ void Layer::onDraw(const sp<const DisplayDevice>& hw, const Region& clip) const
 	        if (useFiltering) {
 	            filter = GL_LINEAR;
 	        }
-                ALOGD("Called in onDraw()");
+
 	        if(hw->setDispProp(DISPLAY_CMD_GETDISPLAYMODE,0,0,0) == DISPLAY_MODE_SINGLE_VAR_GPU)
 	        {
 	            filter = GL_LINEAR;

@@ -191,13 +191,12 @@ namespace android
         status_t 			result;
         char property[PROPERTY_VALUE_MAX];
 
+        ALOGD("%s: Loading display module", __FUNCTION__);
         err = hw_get_module(DISPLAY_HARDWARE_MODULE_ID, (hw_module_t const**)&module);
-        ALOGD("hw_get_module return %d", err);
         
         if (err == 0)
 	    {
                 err = display_open(module, &mDevice);
-                ALOGD("display_open return %d", err);
 	    }
         else
             {

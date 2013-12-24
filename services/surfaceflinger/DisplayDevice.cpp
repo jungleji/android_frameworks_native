@@ -98,7 +98,7 @@ DisplayDevice::DisplayDevice(
       mOrientation()
 {
     init(config);
-    ALOGI("Create display dispather");
+    ALOGI("Create display dispatcher");
     mDisplayDispatcher = new DisplayDispatcher(mFlinger);
 }
 
@@ -260,7 +260,6 @@ void DisplayDevice::swapBuffers(HWComposer& hwc) const {
 void DisplayDevice::onSwapBuffersCompleted(HWComposer& hwc) const {
     if (mDisplayDispatcher != NULL)
     {
-        ALOGI("dispatcher swap buffer");
         mDisplayDispatcher->startSwapBuffer( 0 );
     }
 
@@ -515,7 +514,6 @@ int DisplayDevice::setDispProp(int cmd,int param0,int param1,int param2) const
 {
     if (mDisplayDispatcher != NULL)
     {
-        ALOGD("setDispProp: cmd = %d, param0 = %d, param1 = %d, param2 = %d", cmd, param0, param1, param2);
         return mDisplayDispatcher->setDispProp(cmd,param0,param1,param2);
     }
 
@@ -526,7 +524,6 @@ int DisplayDevice::getDispProp(int cmd,int param0,int param1) const
 {
     if (mDisplayDispatcher != NULL)
     {
-        ALOGD("getDispProp: cmd = %d, param0 = %d, param1 = %d", cmd, param0, param1);
         return mDisplayDispatcher->getDispProp(cmd,param0,param1);
     }
 

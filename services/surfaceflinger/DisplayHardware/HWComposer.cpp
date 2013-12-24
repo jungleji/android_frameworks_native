@@ -15,6 +15,7 @@
  */
 
 #define ATRACE_TAG ATRACE_TAG_GRAPHICS
+#define LOG_TAG "HWComposer"
 
 // Uncomment this to remove support for HWC_DEVICE_API_VERSION_0_3 and older
 // #define HWC_REMOVE_DEPRECATED_VERSIONS 1
@@ -226,6 +227,7 @@ HWComposer::HWComposer(
     char value[PROPERTY_VALUE_MAX];
     property_get("debug.sf.no_hw_vsync", value, "0");
     mDebugForceFakeVSync = atoi(value);
+    ALOGD("%s: mDebugForceFakeVSync = %d", __FUNCTION__, mDebugForceFakeVSync);
 
     bool needVSyncThread = true;
 
@@ -267,7 +269,11 @@ HWComposer::HWComposer(
                 else
                     mCBContext->procs.hotplug = NULL;
                 memset(mCBContext->procs.zero, 0, sizeof(mCBContext->procs.zero));
+                ALOGD("%s: registerProcs()", __FUNCTION__);
                 mHwc->registerProcs(mHwc, &mCBContext->procs);
+
+                // don't need a vsync thread if we have a hardware composer
+                needVSyncThread = false;
             }
         } else {
             hwc_composer_device_t* hwc0 = reinterpret_cast<hwc_composer_device_t*>(mHwc);
@@ -280,10 +286,9 @@ HWComposer::HWComposer(
             }
         }
 
-        // don't need a vsync thread if we have a hardware composer
-        needVSyncThread = false;
         // always turn vsync off when we start
         if (hwcHasVsyncEvent(mHwc)) {
+            ALOGI("%s: eventControl(%d, %d, 0)", __FUNCTION__, HWC_DISPLAY_PRIMARY, HWC_EVENT_VSYNC);
             eventControl(HWC_DISPLAY_PRIMARY, HWC_EVENT_VSYNC, 0);
 
             // the number of displays we actually have depends on the
@@ -331,8 +336,10 @@ HWComposer::HWComposer(
         }
     }
 
+    // needVSyncThread = true;
     if (needVSyncThread) {
         // we don't have VSYNC support, we need to fake it
+        ALOGD("%s, Create VSyncThread", __FUNCTION__);
         mVSyncThread = new VSyncThread(*this);
     }
 }
@@ -358,7 +365,7 @@ void HWComposer::loadHwcModule()
 {
     hw_module_t const* module;
 
-    ALOGI("Load hwcomposer module");
+    ALOGI("Loading hwcomposer module");
     if (hw_get_module(HWC_HARDWARE_MODULE_ID, &module) != 0) {
         ALOGE("%s module not found", HWC_HARDWARE_MODULE_ID);
         return;
@@ -388,7 +395,7 @@ void HWComposer::loadFbHalModule()
 {
     hw_module_t const* module;
 
-    ALOGI("Load framebuffer hal module");
+    ALOGI("Loading gralloc module");
     if (hw_get_module(GRALLOC_HARDWARE_MODULE_ID, &module) != 0) {
         ALOGE("%s module not found", GRALLOC_HARDWARE_MODULE_ID);
         return;
@@ -896,6 +903,7 @@ int HWComposer::getVisualID() const {
         return HAL_PIXEL_FORMAT_RGBA_8888;
         //return HAL_PIXEL_FORMAT_IMPLEMENTATION_DEFINED;
     } else {
+        ALOGD("%s return %d", __FUNCTION__,  mFbDev->format);
         return mFbDev->format;
     }
 }

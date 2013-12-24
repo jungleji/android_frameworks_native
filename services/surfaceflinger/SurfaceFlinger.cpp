@@ -537,9 +537,12 @@ status_t SurfaceFlinger::readyToRun()
             // All non-virtual displays are currently considered secure.
             bool isSecure = true;
             mCurrentState.displays.add(token, DisplayDeviceState(type));
+            ALOGD("%s: Create FramebufferSurface", __FUNCTION__);
             sp<FramebufferSurface> fbs = new FramebufferSurface(*mHwc, i);
+            ALOGD("%s: Create SurfaceTextureClient", __FUNCTION__);
             sp<SurfaceTextureClient> stc = new SurfaceTextureClient(
                         static_cast< sp<ISurfaceTexture> >(fbs->getBufferQueue()));
+            ALOGD("%s: Create DisplayDevice, type = %d", __FUNCTION__, type);
             sp<DisplayDevice> hw = new DisplayDevice(this,
                     type, isSecure, token, stc, fbs, mEGLConfig);
             if (i > DisplayDevice::DISPLAY_PRIMARY) {
@@ -2168,7 +2171,6 @@ void SurfaceFlinger::onScreenAcquired(const sp<const DisplayDevice>& hw) {
 
     hw->acquireScreen();
     int32_t type = hw->getDisplayType();
-    ALOGD("onScreenAcquired hw->getDisplayType = %d", type);
     if (type < DisplayDevice::NUM_DISPLAY_TYPES) {
         // built-in display, tell the HWC
         getHwComposer().acquire(type);
@@ -3004,7 +3006,7 @@ int SurfaceFlinger::setDisplayProp(int cmd,int param0,int param1,int param2)
 {
     int ret = 0;
     const sp<DisplayDevice>& hw(mDisplays[0]);
-    ALOGD("Called in setDispProp(%d, %d, %d, %d)", cmd, param0, param1, param2);
+
     ret = hw->setDispProp(cmd,param0,param1,param2);
 
     if(cmd == DISPLAY_CMD_SETDISPMODE)
@@ -3013,8 +3015,7 @@ int SurfaceFlinger::setDisplayProp(int cmd,int param0,int param1,int param2)
         {
              HWComposer& hwc(getHwComposer());
              int hwc_mode = 0;
-
-			 screen_para_t screen_para;
+             screen_para_t screen_para;
 
              screen_para.app_width[0] = hw->setDispProp(DISPLAY_CMD_GETDISPPARA,0,DISPLAY_APP_WIDTH,0);
              screen_para.app_height[0] = hw->setDispProp(DISPLAY_CMD_GETDISPPARA,0,DISPLAY_APP_HEIGHT,0);
