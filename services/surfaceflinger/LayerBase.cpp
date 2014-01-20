@@ -52,7 +52,6 @@ LayerBase::LayerBase(SurfaceFlinger* flinger)
       mPremultipliedAlpha(true), mName("unnamed"), mDebug(false)
 {
 	const sp<const DisplayDevice> hw(mFlinger->getDefaultDisplayDevice());
-        ALOGD("Called in LayerBase constructor");
 	if(hw->setDispProp(DISPLAY_CMD_GETDISPLAYMODE,0,0,0) == DISPLAY_MODE_SINGLE_VAR_GPU)
     {
         mDispWidth = hw->setDispProp(DISPLAY_CMD_GETDISPPARA,0,DISPLAY_VALID_WIDTH,0);

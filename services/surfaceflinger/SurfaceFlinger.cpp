@@ -732,7 +732,6 @@ status_t SurfaceFlinger::getDisplayInfo(const sp<IBinder>& display, DisplayInfo*
         info->h = hwc.getHeight(type);
 
         const sp<const DisplayDevice> hw(getDefaultDisplayDevice());
-        ALOGD("Call setDispProp(DISPLAY_CMD_GETDISPLAYMODE,0,0,0)");
         if(hw->setDispProp(DISPLAY_CMD_GETDISPLAYMODE,0,0,0) == DISPLAY_MODE_SINGLE_VAR_GPU)
             {
                 info->w = hw->setDispProp(DISPLAY_CMD_GETDISPPARA,0,DISPLAY_APP_WIDTH,0);
