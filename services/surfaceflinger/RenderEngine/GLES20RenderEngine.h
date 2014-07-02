@@ -66,6 +66,7 @@ protected:
 
     virtual void dump(String8& result);
     virtual void setViewportAndProjection(size_t vpw, size_t vph, size_t w, size_t h, bool yswap);
+    virtual void setViewportAndProjection(size_t x, size_t y, size_t vpw, size_t vph, size_t w, size_t h, bool yswap);
     virtual void setupLayerBlending(bool premultipliedAlpha, bool opaque, int alpha);
     virtual void setupDimLayerBlending(int alpha);
     virtual void setupLayerTexturing(const Texture& texture);

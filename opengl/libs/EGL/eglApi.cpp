@@ -132,6 +132,12 @@ static const extention_map_t sExtensionMap[] = {
             (__eglMustCastToProperFunctionPointerType)&eglCreateSyncKHR },
     { "eglDestroySyncKHR",
             (__eglMustCastToProperFunctionPointerType)&eglDestroySyncKHR },
+    { "eglGetRenderBufferANDROID",
+            (__eglMustCastToProperFunctionPointerType)&eglGetRenderBufferANDROID },
+    { "eglRenderBufferModifiedANDROID",
+            (__eglMustCastToProperFunctionPointerType)&eglRenderBufferModifiedANDROID },
+    { "eglSetImplementationAndroid",
+            (__eglMustCastToProperFunctionPointerType)&eglSetImplementationAndroid },
     { "eglClientWaitSyncKHR",
             (__eglMustCastToProperFunctionPointerType)&eglClientWaitSyncKHR },
     { "eglSignalSyncKHR",
@@ -1555,6 +1561,35 @@ EGLBoolean eglPresentationTimeANDROID(EGLDisplay dpy, EGLSurface surface,
     native_window_set_buffers_timestamp(s->win.get(), time);
 
     return EGL_TRUE;
+}
+
+EGLClientBuffer eglGetRenderBufferANDROID(EGLDisplay dpy, EGLSurface draw)
+{
+    clearError();
+
+    egl_display_ptr   const dp = get_display(dpy);
+    egl_surface_t const * const s = get_surface(draw);
+    if (s->cnx->egl.eglGetRenderBufferANDROID) {
+        return s->cnx->egl.eglGetRenderBufferANDROID(dp->disp.dpy, s->surface);
+    }
+    return setError(EGL_BAD_DISPLAY, (EGLClientBuffer*)0);
+}
+
+EGLBoolean eglRenderBufferModifiedANDROID(EGLDisplay dpy, EGLSurface draw)
+{
+    clearError();
+
+    egl_display_ptr  const dp = get_display(dpy);
+    egl_surface_t const * const s = get_surface(draw);
+    if (s->cnx->egl.eglGetRenderBufferANDROID) {
+        return s->cnx->egl.eglRenderBufferModifiedANDROID(dp->disp.dpy, s->surface);
+    }
+    return EGL_TRUE;
+}
+
+void eglSetImplementationAndroid(EGLBoolean impl)
+{
+    //gEGLImplSWOnly = impl;
 }
 
 // ----------------------------------------------------------------------------
