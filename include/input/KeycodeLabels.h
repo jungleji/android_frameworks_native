@@ -248,6 +248,22 @@ static const KeycodeLabel KEYCODES[] = {
     { "BRIGHTNESS_UP", 221 },
     { "MEDIA_AUDIO_TRACK", 222 },
 
+    { "TV_KEYMOUSE_LEFT", 230},
+    { "TV_KEYMOUSE_RIGHT", 231},
+    { "TV_KEYMOUSE_UP", 232},
+    { "TV_KEYMOUSE_DOWN", 233},
+    { "TV_KEYMOUSE_MODE_SWITCH", 234},
+    { "TV_MEDIA_PLAY_PAUSE",240},
+    { "TV_MEDIA_STOP",241},
+    { "TV_MEDIA_NEXT",242},
+    { "TV_MEDIA_PREVIOUS",243},
+    { "TV_MEDIA_FAST_FORWARD",244},
+    { "TV_MEDIA_REWIND",245},
+    { "TV_MEDIA_MULT_FORWARD",246},
+    { "TV_MEDIA_MULT_BACKWARD",247},
+    { "TV_MEDIA_PLAY",248},
+    { "TV_MEDIA_PAUSE",249},
+
     // NOTE: If you add a new keycode here you must also add it to several other files.
     //       Refer to frameworks/base/core/java/android/view/KeyEvent.java for the full list.
 
